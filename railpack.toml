@@ -1,5 +1,6 @@
 [build]
-nixPkgs = ["pkg-config", "sqlite", "libduckdb", "gcc"]
+nixPkgs = ["pkg-config", "sqlite", "libduckdb", "gcc", "glibc"]
+buildCommand = "CGO_ENABLED=1 go build -ldflags=-w -s -o out ./cmd/desktop"
 
 [env]
 CGO_ENABLED = "1"
