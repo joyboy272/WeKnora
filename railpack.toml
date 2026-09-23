@@ -1,0 +1,6 @@
+[build]
+nixPkgs = ["pkg-config", "sqlite", "libduckdb", "gcc"]
+
+[env]
+CGO_ENABLED = "1"
+
