@@ -42,11 +42,11 @@ RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate
 # so that module's go.mod must exist before `go mod download`.
 COPY go.mod go.sum ./
 COPY third_party/anydoc-go/go.mod third_party/anydoc-go/go.mod
-RUN --mount=type=cache,target=/go/pkg/mod go mod download
+RUN --mount=type=cache,id=go-mod-cache,target=/go/pkg/mod go mod download
 COPY cmd/download cmd/download
 RUN go run cmd/download/duckdb/duckdb.go
 COPY . .
-RUN --mount=type=cache,target=/go/pkg/mod bash ./scripts/copy-licenses.sh /license-bundle
+RUN --mount=type=cache,id=go-mod-cache,target=/go/pkg/mod bash ./scripts/copy-licenses.sh /license-bundle
 
 # Get version and commit info for build injection
 ARG VERSION_ARG
@@ -67,8 +67,8 @@ ENV GO_VERSION=${GO_VERSION_ARG}
 ARG WITH_ANYDOC=1
 ENV RUSTUP_HOME=/usr/local/rustup CARGO_HOME=/usr/local/cargo
 ENV PATH=/usr/local/cargo/bin:$PATH
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
+RUN --mount=type=cache,id=cargo-registry-cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,id=cargo-git-cache,target=/usr/local/cargo/git \
     if [ "$WITH_ANYDOC" = "1" ]; then \
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
             | sh -s -- -y --profile minimal --default-toolchain stable && \
@@ -76,13 +76,13 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     fi
 
 # Build the application with version info
-RUN --mount=type=cache,target=/go/pkg/mod \
+RUN --mount=type=cache,id=go-mod-cache,target=/go/pkg/mod \
     if [ "$WITH_ANYDOC" = "1" ]; then \
         make build-prod GO_BUILD_TAGS=anydoc; \
     else \
         make build-prod; \
     fi
-RUN --mount=type=cache,target=/go/pkg/mod cp -r /go/pkg/mod/github.com/yanyiwu/ /app/yanyiwu/
+RUN --mount=type=cache,id=go-mod-cache,target=/go/pkg/mod cp -r /go/pkg/mod/github.com/yanyiwu/ /app/yanyiwu/
 
 # Final stage
 FROM debian:12.12-slim
